@@ -1,0 +1,23 @@
+databaseChangeLog:
+  - changeSet:
+      id: '1'
+      author: 'fizlrock' 
+      comment: 'create users table'
+      changes:
+        - createTable:
+            tableName: app_user
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  startWith: 1
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+              - column:
+                  name: username
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+                    unique: true
