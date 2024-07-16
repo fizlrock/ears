@@ -1,0 +1,32 @@
+
+
+
+
+syntax = "proto3";
+
+option java_outer_classname = "LoginProtos";
+option java_package = "dev.fizlrock.ears.proto";
+
+message LoginRequest {
+    string username = 1;
+    string password = 2;
+}
+
+message RegistrationRequest{
+    string username = 1;
+    string password = 2;
+    string email = 3;
+}
+
+message LoginResponse {
+    string token = 1;
+}
+
+
+// Определение сервиса.
+service RegistrationService {
+  rpc login(LoginRequest) returns (LoginResponse) {
+  }
+  rpc register(RegistrationRequest) returns (LoginResponse) {
+  }
+}
