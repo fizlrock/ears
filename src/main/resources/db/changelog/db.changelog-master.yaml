@@ -21,3 +21,61 @@ databaseChangeLog:
                   constraints:
                     nullable: false
                     unique: true
+  - changeSet:
+     id: '2'
+     author: 'fizlrock' 
+     comment: 'Add password column'
+     changes:
+      - addColumn:
+          tableName: app_user
+          columns:
+            - column:
+                name: password_hash
+                type: clob
+      - delete:
+          tableName: app_user
+          where: password_hash is null
+
+      - addNotNullConstraint:
+          tableName: app_user
+          columnName: password_hash
+
+  - changeSet:
+      id: '3'
+      author: 'fizlrock'
+      comment: 'create table for audio records info'
+      changes:
+        - createTable:
+            tableName: audio_record_info
+            columns:
+              - column:
+                  name: audio_info_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+              - column:
+                  name: user_id
+                  type: bigint
+                  remarks: 'ID пользователя создавшего запись'
+                  constraints:
+                    nullable: false
+                    referencedTableName: app_user
+                    referencedColumnNames: id
+                    foreignKeyName: audio_record_info_user_fk
+                    deleteCascade: true
+
+              - column:
+                  name: durability
+                  type: bigint
+                  defaultValueNumeric: 0
+                  remarks: 'Record durability in seconds'
+
+              - column:
+                  name: record_date
+                  type: datetime
+                  remarks: 'the date and time when the recording was made'
+              - column:
+                  name: upload_date
+                  type: datetime
+                  remarks: 'the date and time when the recording was uploaded'
