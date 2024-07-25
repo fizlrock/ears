@@ -25,9 +25,8 @@ message AudioUploadResponse {
 }
 
 message Metadata {
-    int32 batchCount = 1;
-    int32 batchSize = 2;
-    google.protobuf.Timestamp recordStartTime = 3;
+    int64 totalFileSize = 1;
+    google.protobuf.Timestamp recordStartTime = 2;
 }
 
 message Batch {
@@ -43,4 +42,7 @@ service EarsService {
 
   rpc uploadAudio(stream AudioUploadRequest) returns (AudioUploadResponse){
   }
+
+
+  rpc testAuth(google.protobuf.Empty) returns (google.protobuf.Empty){}
 }

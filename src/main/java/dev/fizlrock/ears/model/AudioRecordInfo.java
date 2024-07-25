@@ -11,11 +11,18 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @Entity
+@Builder
 @Table(name = "audio_record_info")
+@NoArgsConstructor
+@AllArgsConstructor
 public class AudioRecordInfo {
 
   @Id
@@ -35,5 +42,12 @@ public class AudioRecordInfo {
 
   @Column(name = "upload_date")
   LocalDateTime uploadedDate;
+
+  @Transient
+  UploadStatus uploadStatus;
+
+  public enum UploadStatus {
+    Uploading, Failed, Done
+  }
 
 }
