@@ -55,7 +55,6 @@ dependencies {
 
 
 	// Безопасность
-	implementation 'io.envoyproxy.controlplane:api:1.0.45'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 
 	// Liquibase

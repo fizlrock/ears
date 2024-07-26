@@ -2,8 +2,6 @@ package dev.fizlrock.ears.controllers;
 
 import static io.grpc.Status.ALREADY_EXISTS;
 
-import java.io.IOException;
-import java.io.OutputStream;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.TimeZone;
@@ -16,8 +14,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import com.google.protobuf.Empty;
 
 import dev.fizlrock.ears.model.AudioRecordInfo;
-import dev.fizlrock.ears.model.User;
 import dev.fizlrock.ears.model.AudioRecordInfo.UploadStatus;
+import dev.fizlrock.ears.model.User;
 import dev.fizlrock.ears.proto.EarsServiceGrpc.EarsServiceImplBase;
 import dev.fizlrock.ears.proto.LoginProtos.AudioUploadRequest;
 import dev.fizlrock.ears.proto.LoginProtos.AudioUploadResponse;

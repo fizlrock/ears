@@ -5,7 +5,6 @@ import java.util.List;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.access.AccessDecisionManager;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.ProviderManager;
@@ -21,9 +20,6 @@ import dev.fizlrock.ears.repository.UserRepository;
 import net.devh.boot.grpc.server.security.authentication.BasicGrpcAuthenticationReader;
 import net.devh.boot.grpc.server.security.authentication.CompositeGrpcAuthenticationReader;
 import net.devh.boot.grpc.server.security.authentication.GrpcAuthenticationReader;
-import net.devh.boot.grpc.server.security.check.AccessPredicate;
-import net.devh.boot.grpc.server.security.check.GrpcSecurityMetadataSource;
-import net.devh.boot.grpc.server.security.check.ManualGrpcSecurityMetadataSource;
 
 /**
  * SecurityConfiguration
@@ -70,24 +66,6 @@ public class SecurityConfiguration {
     };
 
     return users;
-  }
-
-  @Bean
-  GrpcSecurityMetadataSource grpcSecurityMetadataSource() {
-    final ManualGrpcSecurityMetadataSource source = new ManualGrpcSecurityMetadataSource();
-    // source.set(MyServiceGrpcgetMethodA(), AccessPredicate.authenticated());
-    // source.set(MyServiceGrpc.getMethodB(), AccessPredicate.hasRole("ROLE_USER"));
-    // source.set(MyServiceGrpc.getMethodC(), AccessPredicate.hasAllRole("ROLE_FOO", "ROLE_BAR"));
-    // source.set(MyServiceGrpc.getMethodD(), (auth, call) -> "admin".equals(auth.getName()));
-    source.setDefault(AccessPredicate.denyAll());
-    return source;
-  }
-
-  @Bean
-  AccessDecisionManager accessDecisionManager() {
-    final List<AccessDecisionVoter<?>> voters = new ArrayList<>();
-    voters.add(new AccessPredicateVoter());
-    return new UnanimousBased(voters);
   }
 
 }
