@@ -1,4 +1,4 @@
-package dev.fizlrock.ears.model;
+package dev.fizlrock.ears.domain.entities;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -47,7 +47,26 @@ public class AudioRecordInfo {
   UploadStatus uploadStatus;
 
   public enum UploadStatus {
-    Uploading, Failed, Done
+    /**
+     * Соединение установлено и получены метаданные
+     */
+    Waiting,
+    /**
+     * Идет загрузка файла
+     */
+    Uploading,
+    /**
+     * Ошибка передачи файла, смотри логи
+     */
+    ConnectionFailed,
+    /**
+     * Клиент передал недопустимые данные
+     */
+    ClientMalformedData,
+    /**
+     * Файл успешно получен
+     */
+    Uploaded
   }
 
 }

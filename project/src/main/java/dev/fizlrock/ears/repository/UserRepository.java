@@ -6,7 +6,8 @@ import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.stereotype.Repository;
 
-import dev.fizlrock.ears.model.User;
+import dev.fizlrock.ears.domain.entities.User;
+
 
 @Repository
 public interface UserRepository

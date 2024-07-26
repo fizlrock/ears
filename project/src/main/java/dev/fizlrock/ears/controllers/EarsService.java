@@ -13,15 +13,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.google.protobuf.Empty;
 
-import dev.fizlrock.ears.model.AudioRecordInfo;
-import dev.fizlrock.ears.model.AudioRecordInfo.UploadStatus;
-import dev.fizlrock.ears.model.User;
+import dev.fizlrock.ears.domain.entities.AudioRecordInfo;
+import dev.fizlrock.ears.domain.entities.AudioRecordInfo.UploadStatus;
+import dev.fizlrock.ears.domain.entities.User;
 import dev.fizlrock.ears.proto.EarsServiceGrpc.EarsServiceImplBase;
 import dev.fizlrock.ears.proto.LoginProtos.AudioUploadRequest;
 import dev.fizlrock.ears.proto.LoginProtos.AudioUploadResponse;
 import dev.fizlrock.ears.repository.AudioRecordInfoRepository;
 import dev.fizlrock.ears.repository.UserRepository;
-import dev.fizlrock.ears.services.LocalAudioStorage;
 import io.grpc.stub.StreamObserver;
 import lombok.extern.slf4j.Slf4j;
 import net.devh.boot.grpc.server.service.GrpcService;;
@@ -35,8 +34,6 @@ public class EarsService extends EarsServiceImplBase {
   @Autowired
   AudioRecordInfoRepository audioInfoRepo;
 
-  @Autowired
-  LocalAudioStorage storage;
 
   @Autowired
   PasswordEncoder encoder;
@@ -102,7 +99,7 @@ public class EarsService extends EarsServiceImplBase {
             throw new RuntimeException("Лишние данные");
 
           log.info("received {}/{} bytes", bytesRecieved, bytesTotal);
-          storage.writeBytes(audioInfo.getId().toString(), data.toByteArray());
+          // storage.writeBytes(audioInfo.getId().toString(), data.toByteArray());
 
         } else {
           if (request.hasBatch())
@@ -128,7 +125,7 @@ public class EarsService extends EarsServiceImplBase {
               .build();
 
           audioInfoRepo.save(audioInfo);
-          storage.openAudio(audioInfo.getId().toString());
+          // storage.openAudio(audioInfo.getId().toString());
 
         }
 
@@ -137,14 +134,14 @@ public class EarsService extends EarsServiceImplBase {
       @Override
       public void onError(Throwable t) {
         // TODO Auto-generated method stub
-        storage.closeAudio(audioInfo.getId().toString());
+        // storage.closeAudio(audioInfo.getId().toString());
 
         throw new UnsupportedOperationException("Unimplemented method 'onError'");
       }
 
       @Override
       public void onCompleted() {
-        storage.closeAudio(audioInfo.getId().toString());
+        // storage.closeAudio(audioInfo.getId().toString());
 
         responseObserver.onNext(
             AudioUploadResponse.newBuilder()

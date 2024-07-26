@@ -1,4 +1,4 @@
-package dev.fizlrock.ears.model;
+package dev.fizlrock.ears.domain.entities;
 
 import java.util.HashSet;
 import java.util.Set;
