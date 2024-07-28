@@ -24,7 +24,6 @@ Client <-- EarsService : Upload end response
 @enduml
 
 @startuml
-
 EarsService -> AudioService : getUploader(username, Metadata)
 
 
@@ -38,8 +37,10 @@ AudioService -> AudioService : Проверка бизнес правил
 AudioService -> AudioRecordInfoRepository : create AudioRecordInfo
 AudioService <-- AudioRecordInfoRepository : UUID
 
-AudioService -> AudioService : create new instance FileUploader
+AudioService -> AudioService : instance FileUploader
 
+AudioService -> FileStorage : getUploader(String uuid)
+AudioService <-- FileStorage : uploaderInstance
 
 EarsService <-- AudioService : FileUploader instance reference
 
@@ -47,10 +48,18 @@ EarsService -> "FileUploader instance" : writeBatch (метод асинхрон
 
 EarsService -> "FileUploader instance" : close
 
-AudioService <-- "FileUploader instance" : fileUploadedNotify
+EarsService -> AudioService : fileUploadedNotify(file_uuid)
 
-AudioService --> AudioRecordInfoRepository : update info
+AudioService -> AudioRecordInfoRepository : update info
 
+alt transmissionError
+EarsService -> "FileUploader instance" : close
+"FileUploader instance" -> "FileUploader instance" : close writing thread \n and throw exception
+EarsService <-- "FileUploader instance" : exception
+EarsService -> AudioService : fileUploadFailNotify(file_uuid)
+AudioService -> FileStorage : deleteFile(file_uuid)
+AudioService -> AudioRecordInfoRepository : update info
+end
 
 @enduml
      ┌───────────┐                   ┌────────────┐                         ┌──────────────┐           ┌─────────────────────────┐          ┌─────────────────────┐
