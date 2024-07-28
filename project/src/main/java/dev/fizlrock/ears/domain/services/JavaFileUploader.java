@@ -18,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class JavaFileUploader implements FileUploader {
 
+  final String identifier;
   final File file;
   final Long size_limit;
   Long writedBytes;
@@ -26,7 +27,8 @@ public class JavaFileUploader implements FileUploader {
 
   CompletionHandler<Integer, ByteBuffer> handler;
 
-  public JavaFileUploader(final File file, final Long size_limit) throws FileNotFoundException {
+  public JavaFileUploader(final File file, final Long size_limit, String identifier) throws FileNotFoundException {
+    this.identifier = identifier;
     this.size_limit = size_limit;
     this.file = file;
     writedBytes = 0l;
@@ -50,8 +52,7 @@ public class JavaFileUploader implements FileUploader {
 
     long new_size = writedBytes + bytes.length;
     if (size_limit < new_size) {
-      // Тут закрыть поток
-      // TODO
+      writedBytes = size_limit; // так закрывается пишущий поток
       throw new RuntimeException();
     }
 
@@ -66,8 +67,7 @@ public class JavaFileUploader implements FileUploader {
   @Override
   public void close() {
     if (size_limit != writedBytes) {
-      // Тут закрыть поток
-      // TODO
+      writedBytes = size_limit; // так закрывается пишущий поток
       throw new RuntimeException("Ожидаются ещё данные");
     }
 
@@ -78,7 +78,7 @@ public class JavaFileUploader implements FileUploader {
 
     @Override
     public void completed(Integer bytes_count, ByteBuffer buffer) {
-      log.debug("chunk write on disk. size: {}", bytes_count);
+      log.debug("chunk was writed on disk. size: {}", bytes_count);
       var chunks = notWritedChunks.decrementAndGet();
       if (writedBytes == size_limit && chunks == 0)
         try {
@@ -93,6 +93,11 @@ public class JavaFileUploader implements FileUploader {
       throw new RuntimeException(e);
     }
 
+  }
+
+  @Override
+  public String getIdentifier() {
+    return identifier;
   }
 
 }

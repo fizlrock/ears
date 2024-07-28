@@ -5,6 +5,8 @@ package dev.fizlrock.ears.domain.services;
  */
 public interface FileUploader {
 
+
+ String getIdentifier();
   /**
    * Принимает данные и записывает в файл. Метод асинхронный.
    * <p>

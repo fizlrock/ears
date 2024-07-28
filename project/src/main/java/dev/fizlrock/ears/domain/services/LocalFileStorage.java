@@ -1,18 +1,19 @@
 package dev.fizlrock.ears.domain.services;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.HashMap;
+import java.io.UncheckedIOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.LongAccumulator;
 import java.util.stream.Stream;
 
 import javax.annotation.PostConstruct;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -67,9 +68,11 @@ public class LocalFileStorage implements FileStorage {
   public FileUploader getFileUploader(String file_identifier, Long size) {
 
     if (size > fileSizeLimit) {
-      // TODO file size check;
-      throw new RuntimeException();
+      throw new IllegalArgumentException("Слишком большой файл");
     }
+
+    if (files_map.containsKey(file_identifier))
+      throw new IllegalArgumentException("Идентификатор не уникальный");
 
     boolean haveVolume = false;
 
@@ -77,24 +80,27 @@ public class LocalFileStorage implements FileStorage {
       var updated_size = storageSize.addAndGet(size);
       if (updated_size < storageSizeLimit)
         haveVolume = true;
+      // TODO
       // Тут всё ещё может произойти ошибка
     }
 
-    // TODO
     if (!haveVolume)
-      throw new RuntimeException();
+      throw new RuntimeException("Недостаточно места(ограничение)");
 
     var new_file = new File(rootFolder, file_identifier);
     try {
       new_file.createNewFile();
     } catch (IOException e) {
-      // TODO
-      throw new RuntimeException();
+      throw new UncheckedIOException(e);
     }
 
     files_map.put(file_identifier, new_file);
 
-    return new JavaFileUploader(new_file, size);
+    try {
+      return new JavaFileUploader(new_file, size, file_identifier);
+    } catch (FileNotFoundException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 
   @Override

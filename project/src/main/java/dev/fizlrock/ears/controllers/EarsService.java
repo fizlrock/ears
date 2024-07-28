@@ -15,6 +15,8 @@ import com.google.protobuf.Empty;
 
 import dev.fizlrock.ears.domain.entities.AudioRecordInfo;
 import dev.fizlrock.ears.domain.entities.AudioRecordInfo.UploadStatus;
+import dev.fizlrock.ears.domain.services.AudioService;
+import dev.fizlrock.ears.domain.services.FileUploader;
 import dev.fizlrock.ears.domain.entities.User;
 import dev.fizlrock.ears.proto.EarsServiceGrpc.EarsServiceImplBase;
 import dev.fizlrock.ears.proto.LoginProtos.AudioUploadRequest;
@@ -34,9 +36,11 @@ public class EarsService extends EarsServiceImplBase {
   @Autowired
   AudioRecordInfoRepository audioInfoRepo;
 
-
   @Autowired
   PasswordEncoder encoder;
+
+  @Autowired
+  AudioService audioService;
 
   protected Exception duplicateUserNameResponse = ALREADY_EXISTS
       .withDescription("Такое имя пользователя занято")
@@ -76,11 +80,8 @@ public class EarsService extends EarsServiceImplBase {
     return new StreamObserver<AudioUploadRequest>() {
 
       boolean metadataReceived = false;
-      Long bytesTotal = 0l;
-      Long bytesRecieved = 0l;
-      LocalDateTime recordedDate;
 
-      AudioRecordInfo audioInfo;
+      FileUploader uploader;
 
       @Override
       public void onNext(AudioUploadRequest request) {
@@ -91,15 +92,7 @@ public class EarsService extends EarsServiceImplBase {
             throw new RuntimeException("Кривой запрос, низя два раза метадату отправлять");
           if (!request.hasBatch())
             throw new RuntimeException("Ожидаются данные");
-
-          var data = request.getBatch().getData();
-          bytesRecieved += data.size();
-
-          if (bytesRecieved > bytesTotal)
-            throw new RuntimeException("Лишние данные");
-
-          log.info("received {}/{} bytes", bytesRecieved, bytesTotal);
-          // storage.writeBytes(audioInfo.getId().toString(), data.toByteArray());
+          uploader.writeBytes(request.getBatch().getData().toByteArray());
 
         } else {
           if (request.hasBatch())
@@ -112,20 +105,9 @@ public class EarsService extends EarsServiceImplBase {
           var metadata = request.getMetadata();
           var instant = Instant.ofEpochSecond(metadata.getRecordStartTime().getSeconds());
           // Тут вероятна фатальная ошибка...
-          recordedDate = LocalDateTime.ofInstant(instant, TimeZone.getDefault().toZoneId());
-          bytesTotal = metadata.getTotalFileSize();
+          var recordedDate = LocalDateTime.ofInstant(instant, TimeZone.getDefault().toZoneId());
 
-          var user = userRepo.findByUsername(username).get();
-
-          audioInfo = AudioRecordInfo.builder()
-              .id(UUID.randomUUID())
-              .recordedDate(recordedDate)
-              .uploadStatus(UploadStatus.Uploading)
-              .owner(user)
-              .build();
-
-          audioInfoRepo.save(audioInfo);
-          // storage.openAudio(audioInfo.getId().toString());
+          uploader = audioService.getFileUploader(username, metadata.getTotalFileSize(), recordedDate);
 
         }
 
@@ -133,19 +115,16 @@ public class EarsService extends EarsServiceImplBase {
 
       @Override
       public void onError(Throwable t) {
-        // TODO Auto-generated method stub
-        // storage.closeAudio(audioInfo.getId().toString());
-
-        throw new UnsupportedOperationException("Unimplemented method 'onError'");
+        log.error("Ошибка загрузки файла: {}", t);
+        audioService.fileUploadFailedNotify(uploader.getIdentifier());
       }
 
       @Override
       public void onCompleted() {
-        // storage.closeAudio(audioInfo.getId().toString());
-
+        audioService.fileUploadedNotify(uploader.getIdentifier());
         responseObserver.onNext(
             AudioUploadResponse.newBuilder()
-                .setAudioId(audioInfo.getId().toString())
+                .setAudioId(uploader.getIdentifier())
                 .build());
         responseObserver.onCompleted();
       }
