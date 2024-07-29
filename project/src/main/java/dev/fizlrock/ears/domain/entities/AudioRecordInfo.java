@@ -5,6 +5,8 @@ import java.util.UUID;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -43,7 +45,8 @@ public class AudioRecordInfo {
   @Column(name = "upload_date")
   LocalDateTime uploadedDate;
 
-  @Transient
+  @Column(name = "status")
+  @Enumerated(EnumType.STRING)
   UploadStatus uploadStatus;
 
   public enum UploadStatus {
@@ -59,6 +62,7 @@ public class AudioRecordInfo {
      * Ошибка передачи файла, смотри логи
      */
     ConnectionFailed,
+    StorageError,
     /**
      * Клиент передал недопустимые данные
      */

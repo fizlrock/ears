@@ -5,7 +5,6 @@ import static io.grpc.Status.ALREADY_EXISTS;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.TimeZone;
-import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -13,11 +12,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.google.protobuf.Empty;
 
-import dev.fizlrock.ears.domain.entities.AudioRecordInfo;
-import dev.fizlrock.ears.domain.entities.AudioRecordInfo.UploadStatus;
-import dev.fizlrock.ears.domain.services.AudioService;
-import dev.fizlrock.ears.domain.services.FileUploader;
 import dev.fizlrock.ears.domain.entities.User;
+import dev.fizlrock.ears.domain.services.AudioService;
 import dev.fizlrock.ears.proto.EarsServiceGrpc.EarsServiceImplBase;
 import dev.fizlrock.ears.proto.LoginProtos.AudioUploadRequest;
 import dev.fizlrock.ears.proto.LoginProtos.AudioUploadResponse;
@@ -80,8 +76,7 @@ public class EarsService extends EarsServiceImplBase {
     return new StreamObserver<AudioUploadRequest>() {
 
       boolean metadataReceived = false;
-
-      FileUploader uploader;
+      String identifier;
 
       @Override
       public void onNext(AudioUploadRequest request) {
@@ -92,7 +87,7 @@ public class EarsService extends EarsServiceImplBase {
             throw new RuntimeException("Кривой запрос, низя два раза метадату отправлять");
           if (!request.hasBatch())
             throw new RuntimeException("Ожидаются данные");
-          uploader.writeBytes(request.getBatch().getData().toByteArray());
+          audioService.writeBytes(identifier, request.getBatch().getData().toByteArray());
 
         } else {
           if (request.hasBatch())
@@ -106,27 +101,26 @@ public class EarsService extends EarsServiceImplBase {
           var instant = Instant.ofEpochSecond(metadata.getRecordStartTime().getSeconds());
           // Тут вероятна фатальная ошибка...
           var recordedDate = LocalDateTime.ofInstant(instant, TimeZone.getDefault().toZoneId());
-
-          uploader = audioService.getFileUploader(username, metadata.getTotalFileSize(), recordedDate);
+          identifier = audioService.createFileUploader(username, metadata.getTotalFileSize(), recordedDate);
 
         }
 
       }
 
       @Override
-      public void onError(Throwable t) {
-        log.error("Ошибка загрузки файла: {}", t);
-        audioService.fileUploadFailedNotify(uploader.getIdentifier());
+      public void onCompleted() {
+        audioService.fileUploadedNotify(identifier);
+        responseObserver.onNext(
+            AudioUploadResponse.newBuilder()
+                .setAudioId(identifier)
+                .build());
+        responseObserver.onCompleted();
       }
 
       @Override
-      public void onCompleted() {
-        audioService.fileUploadedNotify(uploader.getIdentifier());
-        responseObserver.onNext(
-            AudioUploadResponse.newBuilder()
-                .setAudioId(uploader.getIdentifier())
-                .build());
-        responseObserver.onCompleted();
+      public void onError(Throwable t) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'onError'");
       }
 
     };

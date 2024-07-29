@@ -29,7 +29,8 @@ public class AudioService {
 
   private static final Long MIN_FILE_SIZE = 5l;
 
-  public FileUploader getFileUploader(String username, Long file_size, LocalDateTime recordedDateTime) {
+  @Transactional
+  public String createFileUploader(String username, Long file_size, LocalDateTime recordedDateTime) {
 
     if (file_size < MIN_FILE_SIZE)
       throw new IllegalArgumentException("Слишком маленький файл");
@@ -42,26 +43,42 @@ public class AudioService {
         .recordedDate(recordedDateTime)
         .uploadedDate(LocalDateTime.now())
         .owner(user)
-        .uploadStatus(UploadStatus.Uploading)
+        .uploadStatus(UploadStatus.Waiting)
         .build();
 
     audioRepo.save(info);
 
-    return storage.getFileUploader(info.getId().toString(), file_size);
+    try {
+      storage.createAndOpenFile(info.getId().toString(), file_size);
+    } catch (Exception e) {
+      info.setUploadStatus(UploadStatus.StorageError);
+      throw e;
+    }
+    return info.getId().toString();
   }
 
-  @Transactional
-  public void fileUploadFailedNotify(String uuid) {
-    var id = UUID.fromString(uuid);
-    var audio = audioRepo.findById(id).get();
-    audio.setUploadStatus(UploadStatus.ConnectionFailed);
+  public void writeBytes(String file_identifier, byte[] bytes) {
+    try {
+      storage.writeBytes(file_identifier, bytes);
+    } catch (IllegalArgumentException e) {
+      throw e;
+    } catch (Exception e) {
+      var audioInfo = audioRepo.findById(UUID.fromString(file_identifier)).get();
+      audioInfo.setUploadStatus(UploadStatus.ConnectionFailed);
+    }
   }
 
   @Transactional
   public void fileUploadedNotify(String uuid) {
-    var id = UUID.fromString(uuid);
-    var audio = audioRepo.findById(id).get();
-    audio.setUploadStatus(UploadStatus.Uploaded);
+    var audioInfo = audioRepo.findById(UUID.fromString(uuid)).get();
+    try {
+      storage.closeFile(uuid);
+    } catch (IllegalArgumentException e) {
+      throw e;
+    } catch (Exception e) {
+      audioInfo.setUploadStatus(UploadStatus.ConnectionFailed);
+    }
+      audioInfo.setUploadStatus(UploadStatus.Uploaded);
   }
 
 }

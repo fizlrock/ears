@@ -11,6 +11,7 @@ import java.util.stream.Stream;
 
 import javax.annotation.PostConstruct;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -22,6 +23,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Component
 public class LocalFileStorage implements FileStorage {
+
+  @Autowired
+  LocalFileStorage instance;
 
   @Value("${dev.fizlrock.LocalFileStorage.folderPath:./users_data}")
   private String rootFolderPath;
@@ -40,6 +44,7 @@ public class LocalFileStorage implements FileStorage {
   private AtomicLong storageSize = new AtomicLong();
 
   private Map<String, File> files_map = new ConcurrentHashMap<>();
+  private Map<String, FileUploader> uploaders = new ConcurrentHashMap<>();
 
   @PostConstruct
   void init() {
@@ -65,7 +70,8 @@ public class LocalFileStorage implements FileStorage {
   }
 
   @Override
-  public FileUploader getFileUploader(String file_identifier, Long size) {
+  public void createAndOpenFile(String file_identifier, Long size) {
+    log.debug("Создание файла {} с ограничением по размеру {}", file_identifier, size);
 
     if (size > fileSizeLimit) {
       throw new IllegalArgumentException("Слишком большой файл");
@@ -87,6 +93,8 @@ public class LocalFileStorage implements FileStorage {
     if (!haveVolume)
       throw new RuntimeException("Недостаточно места(ограничение)");
 
+    log.debug("Места хватает. Текущий размер хранилища: {}", storageSize.get());
+
     var new_file = new File(rootFolder, file_identifier);
     try {
       new_file.createNewFile();
@@ -94,19 +102,56 @@ public class LocalFileStorage implements FileStorage {
       throw new UncheckedIOException(e);
     }
 
+    log.debug("Файл {} успешно создан", file_identifier);
     files_map.put(file_identifier, new_file);
 
+    FileUploader uploader;
+
     try {
-      return new JavaFileUploader(new_file, size, file_identifier);
+      uploader = new JavaFileUploader(new_file, size, file_identifier);
     } catch (FileNotFoundException e) {
       throw new UncheckedIOException(e);
+    }
+    log.debug("Загрузчик для файла {} успешно открыт", file_identifier);
+    uploaders.put(file_identifier, uploader);
+  }
+
+  @Override
+  public void closeFile(String file_identifier) {
+    FileUploader uploader = uploaders.remove(file_identifier);
+    if (uploader == null)
+      throw new IllegalStateException("Загрузчик с переданным идентификатором не найден");
+
+    try {
+      uploader.close();
+    } catch (Exception e) {
+      log.error("Ошибка закрытия загрузчика {}. Удаления файла...", file_identifier);
+      File f = files_map.remove(file_identifier);
+      if (f == null)
+        throw new NullPointerException("File == null???");
+      if (f.delete())
+        log.debug("Файл {} успешно удален", file_identifier);
+      else
+        log.warn("Ошибка удаление файла: {}", file_identifier);
+
+      throw e;
     }
   }
 
   @Override
-  public Stream<File> getAllFiles() {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("Unimplemented method 'getAllFiles'");
+  public void writeBytes(String file_identifier, byte[] bytes) {
+
+    FileUploader uploader = uploaders.get(file_identifier);
+    if (uploader == null)
+      throw new IllegalArgumentException("Загрузчик с переданным идентификатором не найден");
+
+    try {
+      uploader.writeBytes(bytes);
+    } catch (Exception e) {
+      instance.closeFile(file_identifier);
+      throw e;
+    }
+
   }
 
 }

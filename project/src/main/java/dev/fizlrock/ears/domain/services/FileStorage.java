@@ -25,8 +25,11 @@ public interface FileStorage {
    * @param file_identifier
    * @return
    */
-  FileUploader getFileUploader(String file_identifier, Long file_size);
+  void createAndOpenFile(String file_identifier, Long file_size);
 
-  Stream<File> getAllFiles();
+  void closeFile(String file_identifier);
+
+  void writeBytes(String file_identifier, byte[] bytes);
+
 
 }

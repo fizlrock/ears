@@ -79,3 +79,15 @@ databaseChangeLog:
                   name: upload_date
                   type: datetime
                   remarks: 'the date and time when the recording was uploaded'
+
+  - changeSet:
+      id: '4'
+      author: 'fizlrock'
+      comment: 'add status column'
+      changes:
+        - addColumn:
+            tableName: audio_record_info
+            columns:
+              - column:
+                  name: status
+                  type: varchar(100)
