@@ -25,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 public class LocalFileStorage implements FileStorage {
 
   @Autowired
-  LocalFileStorage instance;
+  FileStorage instance;
 
   @Value("${dev.fizlrock.LocalFileStorage.folderPath:./users_data}")
   private String rootFolderPath;

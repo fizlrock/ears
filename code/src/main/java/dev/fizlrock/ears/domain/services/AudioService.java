@@ -54,6 +54,7 @@ public class AudioService {
       info.setUploadStatus(UploadStatus.StorageError);
       throw e;
     }
+      info.setUploadStatus(UploadStatus.Uploading);
     return info.getId().toString();
   }
 
