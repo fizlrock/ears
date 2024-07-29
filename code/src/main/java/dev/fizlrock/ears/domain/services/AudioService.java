@@ -39,7 +39,6 @@ public class AudioService {
     // Тут проверка бизнес правил
 
     AudioRecordInfo info = AudioRecordInfo.builder()
-        .id(UUID.randomUUID())
         .recordedDate(recordedDateTime)
         .uploadedDate(LocalDateTime.now())
         .owner(user)

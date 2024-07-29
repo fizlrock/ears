@@ -1,6 +1,6 @@
 package dev.fizlrock.ears;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.UUID;
 
@@ -42,19 +42,31 @@ class EarsApplicationTests {
 	@Autowired
 	UserRepository userRepo;
 
+	@Test
+	void createEntityWithUUID() {
+		var user = User.builder()
+				.username("randomusername")
+				.passwordHash("randompasswordhash")
+				.build();
+		assertNull(user.getId());
+		userRepo.save(user);
+		assertNotNull(user.getId());
+	}
 
 	@Test
 	void testFindByUUID() {
 		var user = User.builder()
-				.username("fuck you")
-				.passwordHash("fuck it")
+				.username("randomusername")
+				.passwordHash("randompasswordhash")
 				.build();
 		userRepo.save(user);
+
 		var audio = AudioRecordInfo.builder()
-				.id(UUID.randomUUID())
 				.owner(user)
 				.build();
 		audioRepo.save(audio);
+
+		assertNotNull(audio.getId());
 
 		var finded = audioRepo.findById(UUID.fromString(audio.getId().toString()));
 
