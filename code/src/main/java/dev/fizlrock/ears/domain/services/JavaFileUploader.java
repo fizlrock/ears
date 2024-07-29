@@ -53,7 +53,7 @@ public class JavaFileUploader implements FileUploader {
     long new_size = writedBytes + bytes.length;
     if (size_limit < new_size) {
       writedBytes = size_limit; // так закрывается пишущий поток
-      throw new RuntimeException();
+      throw new IllegalArgumentException("Итоговый размер файла превышает заявленный");
     }
 
     ByteBuffer buffer = ByteBuffer.wrap(bytes);
@@ -71,7 +71,6 @@ public class JavaFileUploader implements FileUploader {
       throw new RuntimeException("Ожидаются ещё данные");
     }
 
-    throw new UnsupportedOperationException("Unimplemented method 'close'");
   }
 
   private class Handler implements CompletionHandler<Integer, ByteBuffer> {
@@ -98,6 +97,15 @@ public class JavaFileUploader implements FileUploader {
   @Override
   public String getIdentifier() {
     return identifier;
+  }
+
+  @Override
+  public void waitEndOfUploading() throws InterruptedException {
+    if(size_limit != writedBytes)
+      throw new IllegalStateException("close uploader before");
+    while (notWritedChunks.get() != 0)
+      Thread.sleep(10);
+
   }
 
 }

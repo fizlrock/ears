@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.UUID;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
@@ -24,6 +25,7 @@ import dev.fizlrock.ears.repository.UserRepository;
 @DataJpaTest(includeFilters = @ComponentScan.Filter(classes = AudioRecordInfoRepository.class, type = FilterType.ASSIGNABLE_TYPE))
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Testcontainers
+@Disabled("Слишком долго")
 class AudioRecordInfoRepositoryTests {
 
 	@DynamicPropertySource

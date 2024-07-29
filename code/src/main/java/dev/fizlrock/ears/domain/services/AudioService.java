@@ -27,7 +27,7 @@ public class AudioService {
   @Autowired
   AudioRecordInfoRepository audioRepo;
 
-  private static final Long MIN_FILE_SIZE = 5l;
+  public static final Long MIN_FILE_SIZE = 5l;
 
   @Transactional
   public String createFileUploader(String username, Long file_size, LocalDateTime recordedDateTime) {
