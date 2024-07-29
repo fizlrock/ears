@@ -43,7 +43,8 @@ dependencies {
 	
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	implementation 'org.testcontainers:postgresql:1.20.0'
+	testImplementation 'org.testcontainers:postgresql:1.20.0'
+	testImplementation "org.testcontainers:junit-jupiter:1.17.6"
 
 	// Данные
 	runtimeOnly 'org.postgresql:postgresql'
