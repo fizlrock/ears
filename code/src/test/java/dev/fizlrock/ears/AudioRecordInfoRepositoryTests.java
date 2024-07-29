@@ -24,7 +24,7 @@ import dev.fizlrock.ears.repository.UserRepository;
 @DataJpaTest(includeFilters = @ComponentScan.Filter(classes = AudioRecordInfoRepository.class, type = FilterType.ASSIGNABLE_TYPE))
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Testcontainers
-class EarsApplicationTests {
+class AudioRecordInfoRepositoryTests {
 
 	@DynamicPropertySource
 	static void configureProperties(DynamicPropertyRegistry registry) {
