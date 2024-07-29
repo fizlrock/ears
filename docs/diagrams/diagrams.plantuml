@@ -1,0 +1,154 @@
+@startuml
+
+title Uploading audio part 1
+
+Client -> AuthInterceptor : Open connnection request \n HEADERS: auth:<user:pass>
+AuthInterceptor -> AuthzInterceptor : Open connnection request \n HEADERS: auth:<user:pass> \n SecurityContextHolder
+AuthzInterceptor -> EarsService : Open connection request
+EarsService -> EarsService: get principals
+Client -> EarsService : Send metadata. \n TotalFileSize: X bytes \n RecordStartTimestamp: Y ns
+
+EarsService -> AudioService : getUploader(username)
+
+EarsService <-- AudioService : uploader instance
+
+
+alt #Gold Выгрузка данных
+Client -> EarsService : send batch
+
+EarsService -> EarsService: uploader.writeBatch()
+end
+
+Client -> EarsService : Connection clone request
+Client <-- EarsService : Upload end response
+
+
+@enduml
+
+
+
+
+
+
+
+
+
+
+@startuml
+
+title Uploading audio part 2 (v1)
+
+EarsService -> AudioService : getUploader(username, Metadata)
+AudioService -> UserRepository : getUserByUsername(username)
+
+AudioService <-- UserRepository : User
+
+alt #Red Исключения по бизнес логике
+AudioService -> AudioService : Проверка бизнес правил
+end
+
+AudioService -> AudioRecordInfoRepository : create AudioRecordInfo \n status: Waiting
+AudioService <-- AudioRecordInfoRepository : UUID
+
+
+alt #Red Ошибка хранилища
+AudioService -> FileStorage : getUploader(String uuid)
+end
+
+AudioService <-- FileStorage : uploaderInstance
+
+AudioService -> AudioService : recordInfo.setStatus(Uploading);
+
+EarsService <-- AudioService : FileUploader instance reference
+
+alt #Red Ошибка логики выгрузке данных
+
+EarsService -> "FileUploader instance" : writeBatch (метод асинхронный)
+EarsService -> "FileUploader instance" : close
+
+end
+
+EarsService -> AudioService : fileUploadedNotify(file_uuid)
+
+AudioService -> AudioRecordInfoRepository : update info
+
+alt transmissionError
+EarsService -> "FileUploader instance" : close
+"FileUploader instance" -> "FileUploader instance" : close writing thread \n and throw exception
+EarsService <-- "FileUploader instance" : exception
+EarsService -> AudioService : fileUploadFailNotify(file_uuid)
+AudioService -> FileStorage : deleteFile(file_uuid)
+AudioService -> AudioRecordInfoRepository : update info
+end
+
+@enduml
+
+
+
+
+@startuml
+title Uploading audio part 2 (v2)
+
+skinparam backgroundColor OldLace
+EarsService -> AudioService : getUploader(username, Metadata)
+AudioService -> UserRepository : getUserByUsername(username)
+
+AudioService <-- UserRepository : User
+
+
+AudioService -> AudioService : Проверка бизнес правил
+alt #Pink  Исключениe по бизнес логике
+EarsService <-- AudioService : BussnessException
+end
+
+AudioService -> AudioRecordInfoRepository : create AudioRecordInfo \n status: Waiting
+AudioService <-- AudioRecordInfoRepository : UUID
+
+
+AudioService -> FileStorage : createFile(String uuid)
+
+alt #Green uploader успешно создан
+AudioService <-- FileStorage : file identifier
+
+else #Pink Ошибка хранилища
+AudioService -> AudioRecordInfoRepository : update AudioRecordInfo status: StorageError
+EarsService <-- AudioService : some exception
+end
+
+AudioService -> AudioRecordInfoRepository : update AudioRecordInfo status: Uploading
+
+
+EarsService <-- AudioService : file identifier
+
+
+alt Получение файла 
+
+EarsService -> AudioService : writeBatch(file_identifier, bytes)
+AudioService -> FileStorage : writeBatch(file_identifier, bytes)
+FileStorage -> "FileUploader instance" : writeBatch(bytes)
+
+alt #Pink IOError 
+FileStorage <-- "FileUploader instance" : IOException
+AudioService <-- FileStorage : IOException
+AudioService -> AudioRecordInfoRepository : update record status : Failed
+
+EarsService <-- AudioService : IOExcepiton
+end
+end
+
+
+EarsService -> AudioService : fileUploadedNotify(file_uuid)
+
+AudioService -> FileStorage : closeFile(file_uuid)
+FileStorage -> "FileUploader instance" : close
+
+alt #Pink ioerrors
+end
+
+AudioService -> AudioRecordInfoRepository : update record status : Uploaded
+
+AudioService -> AudioRecordInfoRepository : update info
+
+
+
+@enduml
